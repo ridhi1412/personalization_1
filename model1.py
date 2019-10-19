@@ -8,7 +8,7 @@ Created on Sat Oct 19 13:46:40 2019
 from loader1 import load_spark_df, load_pandas_df
 import pyspark
 from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.ml.recommendation import ALS, MatrixFactorizationModel
+from pyspark.ml.recommendation import ALS
 
 dir_name = 'ml-latest-small'
 ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
