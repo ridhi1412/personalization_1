@@ -26,43 +26,27 @@ def load_pandas_df(dir_name, file_name, use_cache=True):
         print(f'Dumping to {cache_path}')
     return df
 
+
 def load_spark_df(dir_name, file_name, use_cache=True):
-    cache_path = os.path.join(CACHE_DIR, f'spark_{dir_name}_{file_name}.msgpack')
+    cache_path = os.path.join(CACHE_DIR,
+                              f'spark_{dir_name}_{file_name}.msgpack')
     if os.path.exists(cache_path) and use_cache:
         print(f'Loading from {cache_path}')
         spark_df = pd.read_msgpack(cache_path)
     else:
         pandas_df = load_pandas_df(dir_name, file_name, use_cache=True)
-#        sc = SparkContext.('local','example')  # if using locally
+        #        sc = SparkContext.('local','example')  # if using locally
         sc = SparkContext.getOrCreate()  # else get multiple contexts error
         sql_sc = SQLContext(sc)
         spark_df = sql_sc.createDataFrame(pandas_df)
     return spark_df
 
+
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
-#    dir_name = 'ml-20m'
+    #    dir_name = 'ml-20m'
     movies_pandas_df = load_pandas_df(dir_name, 'movies', use_cache=True)
     ratings_pandas_df = load_pandas_df(dir_name, 'ratings', use_cache=True)
-    
+
     movies_spark_df = load_spark_df(dir_name, 'movies', use_cache=True)
     ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
