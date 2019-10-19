@@ -19,6 +19,7 @@ def load_df(dir_name, file_name, use_cache=True):
     else:
         csv_path = os.path.join(DATA_DIR, dir_name, file_name + '.csv')
         df = pd.read_csv(csv_path)
+        
         pd.to_msgpack(cache_path, df)
         print(f'Dumping to {cache_path}')
     return df
@@ -26,5 +27,6 @@ def load_df(dir_name, file_name, use_cache=True):
 
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
+#    dir_name = 'ml-20m'
     movies_df = load_df(dir_name, 'movies', use_cache=True)
     ratings_df = load_df(dir_name, 'ratings', use_cache=True)
