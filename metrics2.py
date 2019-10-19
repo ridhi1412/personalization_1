@@ -6,5 +6,6 @@ Created on Sat Oct 19 15:25:55 2019
 """
 
 
-def calculate_coverage(df):
-    pass
+def calculate_coverage(model):
+    user_recos = model.recommendForAllUsers()
+    return user_recos
