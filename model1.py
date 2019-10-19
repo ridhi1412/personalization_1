@@ -9,9 +9,11 @@ from loader1 import load_spark_df, load_pandas_df
 import pyspark
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
+from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
 
 
 def get_als_model_rmse(df, rank):
+    train, test = df.randomSplit([0.9, 0.1], seed=1)
     als = ALS(
         maxIter=5,
         regParam=0.09,
@@ -21,29 +23,36 @@ def get_als_model_rmse(df, rank):
         ratingCol="rating",
         coldStartStrategy="drop",
         nonnegative=True)
+    
     model = als.fit(training)
     evaluator = RegressionEvaluator(
         metricName="rmse", labelCol="rating", predictionCol="prediction")
     predictions = model.transform(test)
     rmse = evaluator.evaluate(predictions)
     print(f'RMSE is {rmse}')
-    return rmse
+    return (predictions,rmse)
 
 def get_best_rank(df):
     rmse_dict = {}
     for rank in [1, 2, 4, 8, 16, 32, 64, 128]:
 #    for rank in [64, 128]:
         print(f'Rank is {rank}')
-        rmse = get_als_model_rmse(df, rank)
+        _, rmse = get_als_model_rmse(df, rank)
         rmse_dict[rank] = rmse
     return rmse_dict
 
+def get_rank_report(df):
+    
+    rank = 64
+    predictions, rmse = get_als_model_rmse(df, rank)
+    metrics = RegressionMetrics(predictions)
+    print("RMSE = %s" % metrics.rootMeanSquaredError)
+    
 
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
     ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
     rmse_dict = get_best_rank(ratings_spark_df)
-    
-    
+    #get_rank_report(ratings_spark_df)
 #    print("RMSE=" + str(rmse))
 #    predictions.show()
