@@ -30,7 +30,7 @@ def get_als_model_rmse(df, rank):
     predictions = model.transform(test)
     rmse = evaluator.evaluate(predictions)
     print(f'RMSE is {rmse}')
-    return (predictions, rmse, model)
+    return (predictions, model, rmse)
 
 
 def calculate_coverage(model):
@@ -49,26 +49,29 @@ def get_best_rank(df):
     rmse_dict = {}
     coverage_dict = {}
     for rank in [1, 2, 4, 8, 16, 32, 64, 128]:
-#    for rank in [64, 128]:
+        #    for rank in [64, 128]:
         print(f'Rank is {rank}')
-        _, rmse, model = get_als_model_rmse(df, rank)
+        _, model, rmse = get_als_model_rmse(df, rank)
         coverage = calculate_coverage(model)
         rmse_dict[rank] = rmse
         coverage_dict[rank] = coverage
     return rmse_dict, coverage_dict
 
+
 def get_rank_report(df):
     rank = 64
-    predictions, rmse = get_als_model_rmse(df, rank)
-    metrics = RegressionMetrics(predictions)
-    print("RMSE = %s" % metrics.rootMeanSquaredError)
-    
+    predictions, model, rmse = get_als_model_rmse(df, rank)
+    valuesAndPreds = predictions.rdd.map(lambda x: (x.rating, x.prediction))
+    regressionmetrics = RegressionMetrics(valuesAndPreds)
+    rankingmetrics = RankingMetrics(valuesAndPreds)
+    print("MAE = {regressionmetrics.meanAbsoluteError}")
+
 
 
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
     ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
-    rmse_dict = get_best_rank(ratings_spark_df)
-    #get_rank_report(ratings_spark_df)
+    #rmse_dict = get_best_rank(ratings_spark_df)
+    get_rank_report(ratings_spark_df)
 #    print("RMSE=" + str(rmse))
 #    predictions.show()
