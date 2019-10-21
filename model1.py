@@ -14,43 +14,58 @@ from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
 
 def get_als_model_rmse(df, rank):
     train, test = df.randomSplit([0.9, 0.1], seed=1)
-    als = ALS(maxIter=5,
-              regParam=0.09,
-              rank=rank,
-              userCol="userId",
-              itemCol="movieId",
-              ratingCol="rating",
-              coldStartStrategy="drop",
-              nonnegative=True)
-
+    als = ALS(
+        maxIter=5,
+        regParam=0.09,
+        rank=rank,
+        userCol="userId",
+        itemCol="movieId",
+        ratingCol="rating",
+        coldStartStrategy="drop",
+        nonnegative=True)
+    
     model = als.fit(train)
-    evaluator = RegressionEvaluator(metricName="rmse",
-                                    labelCol="rating",
-                                    predictionCol="prediction")
+    evaluator = RegressionEvaluator(
+        metricName="rmse", labelCol="rating", predictionCol="prediction")
     predictions = model.transform(test)
     rmse = evaluator.evaluate(predictions)
     print(f'RMSE is {rmse}')
     return (predictions, model, rmse)
 
 
+def calculate_coverage(model):
+    user_recos = model.recommendForAllUsers(numItems=10)
+    recos_list = user_recos.select('recommendations').collect()
+    recos_list = [el for el in recos_list]
+    recos_list = [x for b in recos_list for x in b]
+    recos_list = [item for sublist in recos_list for item in sublist]
+    movie_list = [row['movieId'] for row in recos_list]
+    movie_set = list(set(movie_list))
+    return movie_set
+
+
 def get_best_rank(df):
+    #based on rmse
     rmse_dict = {}
+    coverage_dict = {}
     for rank in [1, 2, 4, 8, 16, 32, 64, 128]:
         #    for rank in [64, 128]:
         print(f'Rank is {rank}')
-        _, _, rmse = get_als_model_rmse(df, rank)
+        _, model, rmse = get_als_model_rmse(df, rank)
+        coverage = calculate_coverage(model)
         rmse_dict[rank] = rmse
-    return rmse_dict
+        coverage_dict[rank] = coverage
+    return rmse_dict, coverage_dict
 
 
 def get_rank_report(df):
-
     rank = 64
     predictions, model, rmse = get_als_model_rmse(df, rank)
     valuesAndPreds = predictions.rdd.map(lambda x: (x.rating, x.prediction))
     regressionmetrics = RegressionMetrics(valuesAndPreds)
     rankingmetrics = RankingMetrics(valuesAndPreds)
-    print("MAE = %s" % regressionmetrics.meanAbsoluteError)
+    print("MAE = {regressionmetrics.meanAbsoluteError}")
+
 
 
 if __name__ == '__main__':
