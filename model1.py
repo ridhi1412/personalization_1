@@ -12,6 +12,7 @@ from pyspark.sql import Row
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
 from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
+from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 
 from sklearn.neighbors import NearestNeighbors
 
@@ -87,10 +88,48 @@ def get_rank_report(df):
     print("MAE = {regressionmetrics.meanAbsoluteError}")
 
 
+def cross_validation(df):
+    """
+        Cross validation
+    """
+    train, test = df.randomSplit([0.9, 0.1], seed=1)
+    
+    als = ALS(
+        userCol="userId",
+        itemCol="movieId",
+        ratingCol="rating",
+        coldStartStrategy="drop",
+        nonnegative=True)
+    
+    evaluator = RegressionEvaluator(
+        metricName="rmse", labelCol="rating", predictionCol="prediction")
+    
+    paramGrid = ParamGridBuilder() \
+    .addGrid(als.maxIter, [3]) \
+    .addGrid(als.regParam, [0.01,0.1]) \
+    .addGrid(als.rank, [64, 128]) \
+    .build()
+    
+        
+    crossval = CrossValidator(estimator=als,
+                          estimatorParamMaps=paramGrid,
+                          evaluator= RegressionEvaluator( metricName="rmse", 
+                                                          labelCol="rating",
+                                                          predictionCol="prediction"),
+                            numFolds=3) 
+
+    # Run cross-validation, and choose the best set of parameters.
+    cvModel = crossval.fit(train)
+    predictions = cvModel.transform(test)
+    rmse = evaluator.evaluate(predictions)
+    print(f'RMSE is {rmse}')
+    
+
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
     ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
-    rmse_dict = get_best_rank(ratings_spark_df)
+    #rmse_dict = get_best_rank(ratings_spark_df)
 #    get_rank_report(ratings_spark_df)
 #    print("RMSE=" + str(rmse))
 #    predictions.show()
+    cross_validation(ratings_spark_df)
