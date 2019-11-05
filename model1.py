@@ -5,7 +5,7 @@ Created on Sat Oct 19 13:46:40 2019
 @author: rmahajan14
 """
 
-from loader1 import load_spark_df, load_pandas_df
+from data_loader import load_spark_df, load_pandas_df
 import pandas as pd
 import numpy as np
 
@@ -108,19 +108,20 @@ def get_best_rank(df, ranks=[2**i for i in range(7)]):
         coverage_train_dict[rank] = coverage_train
         coverage_test_dict[rank] = coverage_test
         running_time_dict[rank] = running_time
-    
-    df = pd.DataFrame(data=np.asarray([list(rmse_train_dict.keys()),
-                            list(rmse_train_dict.values()),
-                            list(rmse_test_dict.values()),
-                            list(coverage_train_dict.values()),
-                            list(coverage_test_dict.values()),
-                            list(running_time_dict.values())
-                            ]).T,
+
+    df = pd.DataFrame(data=np.asarray([
+        list(rmse_train_dict.keys()),
+        list(rmse_train_dict.values()),
+        list(rmse_test_dict.values()),
+        list(coverage_train_dict.values()),
+        list(coverage_test_dict.values()),
+        list(running_time_dict.values())
+    ]).T,
                       columns=[
                           'Rank', 'RMSE_train', 'RMSE_test', 'Coverage_train',
                           'Coverage_test', 'Running_time'
                       ])
-    
+
     return df
 
 
