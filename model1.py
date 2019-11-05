@@ -6,6 +6,9 @@ Created on Sat Oct 19 13:46:40 2019
 """
 
 from loader1 import load_spark_df, load_pandas_df
+import pandas as pd
+import numpy as np
+
 import pyspark
 from pyspark.sql.functions import split, explode
 from pyspark.sql import Row
@@ -17,24 +20,51 @@ from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from sklearn.neighbors import NearestNeighbors
 
 
-def get_als_model_rmse(df, rank):
-    train, test = df.randomSplit([0.9, 0.1], seed=1)
-    als = ALS(maxIter=5,
-              regParam=0.09,
-              rank=rank,
-              userCol="userId",
-              itemCol="movieId",
-              ratingCol="rating",
-              coldStartStrategy="drop",
-              nonnegative=True)
+def get_als_model(df,
+                  rank,
+                  split=[0.9, 0.1],
+                  model='ALS',
+                  evaluator='Regression'):
+    train, test = df.randomSplit(split, seed=1)
 
-    model = als.fit(train)
-    evaluator = RegressionEvaluator(metricName="rmse",
-                                    labelCol="rating",
-                                    predictionCol="prediction")
+    total_unique__movieids_train = train.select(
+        'movieId').distinct().toPandas().values
+    total_unique__movieids_test = test.select(
+        'movieId').distinct().toPandas().values
+
+    if model == 'ALS':
+        model = ALS(maxIter=5,
+                    regParam=0.09,
+                    rank=rank,
+                    userCol="userId",
+                    itemCol="movieId",
+                    ratingCol="rating",
+                    coldStartStrategy="drop",
+                    nonnegative=True)
+
+    if evaluator == 'Regression':
+        evaluator = RegressionEvaluator(metricName="rmse",
+                                        labelCol="rating",
+                                        predictionCol="prediction")
+
+    model = model.fit(train)
+
     predictions = model.transform(test)
-    rmse = evaluator.evaluate(predictions)
-    return (predictions, model, rmse)
+    rmse_test = evaluator.evaluate(model.transform(test))
+    rmse_train = evaluator.evaluate(model.transform(train))
+
+    pred_unique_movieids = calculate_coverage(model)
+    subset_pred_train = [
+        i for i in pred_unique_movieids if i in total_unique__movieids_train
+    ]
+    subset_pred_test = [
+        i for i in pred_unique_movieids if i in total_unique__movieids_test
+    ]
+    coverage_train = len(subset_pred_train) / len(total_unique__movieids_train)
+    coverage_test = len(subset_pred_test) / len(total_unique__movieids_test)
+
+    return (predictions, model, rmse_train, rmse_test, coverage_train,
+            coverage_test)
 
 
 def get_nearest_neighbours_model():
@@ -57,26 +87,38 @@ def calculate_coverage(model):
     df3 = df2.select('movieId').distinct()
     df4 = df3.toPandas()
     movie_set = df4['movieId'].values
-    #    recos_list = user_recos.select('recommendations').collect()
-    #    recos_list = [el for el in recos_list]
-    #    recos_list = [x for b in recos_list for x in b]
-    #    recos_list = [item for sublist in recos_list for item in sublist]
-    #    movie_list = [row['movieId'] for row in recos_list]
-    #    movie_set = list(set(movise_list))
     return movie_set
 
 
 def get_best_rank(df, ranks=[2**i for i in range(7)]):
     #based on rmse
-    rmse_dict = {}
-    coverage_dict = {}
+    rmse_train_dict = {}
+    coverage_train_dict = {}
+
+    rmse_test_dict = {}
+    coverage_test_dict = {}
+
+    total_unique__movieids = df.select('movieId').distinct().toPandas().values
+
     for rank in ranks:
-        _, model, rmse = get_als_model_rmse(df, rank)
-        print(f'RANK: {rank} RMSE : {rmse:.4f}')
-        coverage = calculate_coverage(model)
-        rmse_dict[rank] = rmse
-        coverage_dict[rank] = coverage
-    return rmse_dict, coverage_dict
+        _, model, rmse_train, rmse_test, coverage_train, coverage_test = get_als_model(
+            df, rank, model='ALS', evaluator='Regression')
+        rmse_train_dict[rank] = rmse_train
+        rmse_test_dict[rank] = rmse_test
+        coverage_train_dict[rank] = coverage_train
+        coverage_test_dict[rank] = coverage_test
+    
+    df = pd.DataFrame(data=np.asarray([list(rmse_train_dict.keys()),
+                            list(rmse_train_dict.values()),
+                            list(rmse_test_dict.values()),
+                            list(coverage_train_dict.values()),
+                            list(coverage_test_dict.values())]).T,
+                      columns=[
+                          'Rank', 'RMSE_train', 'RMSE_test', 'Coverage_train',
+                          'Coverage_test'
+                      ])
+    
+    return rmse_train_dict, rmse_test_dict, coverage_train_dict, coverage_test_dict, df
 
 
 def get_rank_report(df):
@@ -88,24 +130,28 @@ def get_rank_report(df):
     print("MAE = {regressionmetrics.meanAbsoluteError}")
 
 
-def cross_validation(df, model='ALS', evaluator='Regression', param_grid=None, k_folds=3 ):
+def cross_validation(df,
+                     model='ALS',
+                     evaluator='Regression',
+                     param_grid=None,
+                     k_folds=3):
     """
         Cross validation
     """
     train, test = df.randomSplit([0.9, 0.1], seed=1)
-    
-    if model=='ALS':
-        model = ALS(userCol="userId",
-                  itemCol="movieId",
-                  ratingCol="rating",
-                  coldStartStrategy="drop",
-                  nonnegative=True)
 
-    if evaluator=='Regression':
+    if model == 'ALS':
+        model = ALS(userCol="userId",
+                    itemCol="movieId",
+                    ratingCol="rating",
+                    coldStartStrategy="drop",
+                    nonnegative=True)
+
+    if evaluator == 'Regression':
         evaluator = RegressionEvaluator(metricName="rmse",
                                         labelCol="rating",
                                         predictionCol="prediction")
-    
+
     if not param_grid:
         param_grid = ParamGridBuilder() \
         .addGrid(model.maxIter, [3]) \
@@ -123,6 +169,7 @@ def cross_validation(df, model='ALS', evaluator='Regression', param_grid=None, k
     rmse = evaluator.evaluate(predictions)
     print(f'RMSE is {rmse}')
     print(cvModel.getEstimatorParamMaps()[0])
+
 
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
