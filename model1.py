@@ -19,30 +19,31 @@ from sklearn.neighbors import NearestNeighbors
 
 def get_als_model_rmse(df, rank):
     train, test = df.randomSplit([0.9, 0.1], seed=1)
-    als = ALS(
-        maxIter=5,
-        regParam=0.09,
-        rank=rank,
-        userCol="userId",
-        itemCol="movieId",
-        ratingCol="rating",
-        coldStartStrategy="drop",
-        nonnegative=True)
+    als = ALS(maxIter=5,
+              regParam=0.09,
+              rank=rank,
+              userCol="userId",
+              itemCol="movieId",
+              ratingCol="rating",
+              coldStartStrategy="drop",
+              nonnegative=True)
 
     model = als.fit(train)
-    evaluator = RegressionEvaluator(
-        metricName="rmse", labelCol="rating", predictionCol="prediction")
+    evaluator = RegressionEvaluator(metricName="rmse",
+                                    labelCol="rating",
+                                    predictionCol="prediction")
     predictions = model.transform(test)
     rmse = evaluator.evaluate(predictions)
-    print(f'RMSE is {rmse}')
     return (predictions, model, rmse)
 
 
 def get_nearest_neighbours_model():
     from scipy.sparse import csr_matrix
     #make an object for the NearestNeighbors Class.
-    model_knn = NearestNeighbors(
-        metric='cosine', algorithm='brute', n_neighbors=20, n_jobs=-1)
+    model_knn = NearestNeighbors(metric='cosine',
+                                 algorithm='brute',
+                                 n_neighbors=20,
+                                 n_jobs=-1)
     # fit the dataset
     model_knn.fit(movie_user_mat_sparse)
 
@@ -65,14 +66,13 @@ def calculate_coverage(model):
     return movie_set
 
 
-def get_best_rank(df):
+def get_best_rank(df, ranks=[2**i for i in range(7)]):
     #based on rmse
     rmse_dict = {}
     coverage_dict = {}
-    for rank in [1, 2, 4, 8, 16, 32, 64, 128]:
-        #    for rank in [64, 128]:
-        print(f'Rank is {rank}')
+    for rank in ranks:
         _, model, rmse = get_als_model_rmse(df, rank)
+        print(f'RANK: {rank} RMSE : {rmse:.4f}')
         coverage = calculate_coverage(model)
         rmse_dict[rank] = rmse
         coverage_dict[rank] = coverage
@@ -88,48 +88,47 @@ def get_rank_report(df):
     print("MAE = {regressionmetrics.meanAbsoluteError}")
 
 
-def cross_validation(df):
+def cross_validation(df, model='ALS', evaluator='Regression', param_grid=None, k_folds=3 ):
     """
         Cross validation
     """
     train, test = df.randomSplit([0.9, 0.1], seed=1)
     
-    als = ALS(
-        userCol="userId",
-        itemCol="movieId",
-        ratingCol="rating",
-        coldStartStrategy="drop",
-        nonnegative=True)
-    
-    evaluator = RegressionEvaluator(
-        metricName="rmse", labelCol="rating", predictionCol="prediction")
-    
-    paramGrid = ParamGridBuilder() \
-    .addGrid(als.maxIter, [3]) \
-    .addGrid(als.regParam, [0.01,0.1]) \
-    .addGrid(als.rank, [64, 128]) \
-    .build()
-    
-        
-    crossval = CrossValidator(estimator=als,
-                          estimatorParamMaps=paramGrid,
-                          evaluator= RegressionEvaluator( metricName="rmse", 
-                                                          labelCol="rating",
-                                                          predictionCol="prediction"),
-                            numFolds=3) 
+    if model=='ALS':
+        model = ALS(userCol="userId",
+                  itemCol="movieId",
+                  ratingCol="rating",
+                  coldStartStrategy="drop",
+                  nonnegative=True)
 
-    # Run cross-validation, and choose the best set of parameters.
+    if evaluator=='Regression':
+        evaluator = RegressionEvaluator(metricName="rmse",
+                                        labelCol="rating",
+                                        predictionCol="prediction")
+    
+    if not param_grid:
+        param_grid = ParamGridBuilder() \
+        .addGrid(model.maxIter, [3]) \
+        .addGrid(model.regParam, [0.01,0.1]) \
+        .addGrid(model.rank, [64, 128]) \
+        .build()
+
+    crossval = CrossValidator(estimator=model,
+                              estimatorParamMaps=param_grid,
+                              evaluator=evaluator,
+                              numFolds=3)
+
     cvModel = crossval.fit(train)
     predictions = cvModel.transform(test)
     rmse = evaluator.evaluate(predictions)
     print(f'RMSE is {rmse}')
-    
+    print(cvModel.getEstimatorParamMaps()[0])
 
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
     ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
     #rmse_dict = get_best_rank(ratings_spark_df)
-#    get_rank_report(ratings_spark_df)
-#    print("RMSE=" + str(rmse))
-#    predictions.show()
+    #    get_rank_report(ratings_spark_df)
+    #    print("RMSE=" + str(rmse))
+    #    predictions.show()
     cross_validation(ratings_spark_df)
