@@ -44,11 +44,14 @@ def get_nn(sparse_mat,
            algorithm='auto',
            n_neighbors=5):
 
-    model_knn = NearestNeighbors(
-        metric='cosine', algorithm='brute', n_neighbors=5, n_jobs=-1)
+    model_knn = NearestNeighbors(metric='cosine',
+                                 algorithm='brute',
+                                 n_neighbors=5,
+                                 n_jobs=-1)
     model_knn.fit(sparse_mat)
     distances, indices = model_knn.kneighbors(sparse_mat)
     return (distances, indices)
+
 
 sparse_mat = spark_to_sparse(ratings_spark_df)
 (distances, indices) = get_nn(sparse_mat)

@@ -14,7 +14,11 @@ from pyspark.sql import SQLContext
 from common import CACHE_DIR, DATA_DIR
 
 
-def load_pandas_df(dir_name, file_name, use_cache=True):
+def load_pandas_df(dir_name,
+                   file_name,
+                   use_cache=True,
+                   DATA_DIR=None,
+                   CACHE_DIR=None):
     cache_path = os.path.join(CACHE_DIR, f'{dir_name}_{file_name}.msgpack')
     if os.path.exists(cache_path) and use_cache:
         print(f'Loading from {cache_path}')
@@ -27,14 +31,22 @@ def load_pandas_df(dir_name, file_name, use_cache=True):
     return df
 
 
-def load_spark_df(dir_name, file_name, use_cache=True):
+def load_spark_df(dir_name,
+                  file_name,
+                  use_cache=True,
+                  DATA_DIR=None,
+                  CACHE_DIR=None):
     cache_path = os.path.join(CACHE_DIR,
                               f'spark_{dir_name}_{file_name}.msgpack')
     if os.path.exists(cache_path) and use_cache:
         print(f'Loading from {cache_path}')
         spark_df = pd.read_msgpack(cache_path)
     else:
-        pandas_df = load_pandas_df(dir_name, file_name, use_cache=True)
+        pandas_df = load_pandas_df(dir_name=dir_name,
+                                   file_name=file_name,
+                                   use_cache=True,
+                                   DATA_DIR=DATA_DIR,
+                                   CACHE_DIR=CACHE_DIR)
         #        sc = SparkContext.('local','example')  # if using locally
         sc = SparkContext.getOrCreate()  # else get multiple contexts error
         sql_sc = SQLContext(sc)
