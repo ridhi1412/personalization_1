@@ -9,6 +9,8 @@ from loader1 import load_spark_df, load_pandas_df
 import pandas as pd
 import numpy as np
 
+from time import time
+
 import pyspark
 from pyspark.sql.functions import split, explode
 from pyspark.sql import Row
@@ -46,9 +48,9 @@ def get_als_model(df,
         evaluator = RegressionEvaluator(metricName="rmse",
                                         labelCol="rating",
                                         predictionCol="prediction")
-
+    start = time()
     model = model.fit(train)
-
+    running_time = time() - start
     predictions = model.transform(test)
     rmse_test = evaluator.evaluate(model.transform(test))
     rmse_train = evaluator.evaluate(model.transform(train))
@@ -64,7 +66,7 @@ def get_als_model(df,
     coverage_test = len(subset_pred_test) / len(total_unique__movieids_test)
 
     return (predictions, model, rmse_train, rmse_test, coverage_train,
-            coverage_test)
+            coverage_test, running_time)
 
 
 def get_nearest_neighbours_model():
@@ -92,33 +94,34 @@ def calculate_coverage(model):
 
 def get_best_rank(df, ranks=[2**i for i in range(7)]):
     #based on rmse
-    rmse_train_dict = {}
-    coverage_train_dict = {}
-
-    rmse_test_dict = {}
-    coverage_test_dict = {}
-
-    total_unique__movieids = df.select('movieId').distinct().toPandas().values
+    rmse_train_dict = dict()
+    coverage_train_dict = dict()
+    rmse_test_dict = dict()
+    coverage_test_dict = dict()
+    running_time_dict = dict()
 
     for rank in ranks:
-        _, model, rmse_train, rmse_test, coverage_train, coverage_test = get_als_model(
+        _, model, rmse_train, rmse_test, coverage_train, coverage_test, running_time = get_als_model(
             df, rank, model='ALS', evaluator='Regression')
         rmse_train_dict[rank] = rmse_train
         rmse_test_dict[rank] = rmse_test
         coverage_train_dict[rank] = coverage_train
         coverage_test_dict[rank] = coverage_test
+        running_time_dict[rank] = running_time
     
     df = pd.DataFrame(data=np.asarray([list(rmse_train_dict.keys()),
                             list(rmse_train_dict.values()),
                             list(rmse_test_dict.values()),
                             list(coverage_train_dict.values()),
-                            list(coverage_test_dict.values())]).T,
+                            list(coverage_test_dict.values()),
+                            list(running_time_dict.values())
+                            ]).T,
                       columns=[
                           'Rank', 'RMSE_train', 'RMSE_test', 'Coverage_train',
-                          'Coverage_test'
+                          'Coverage_test', 'Running_time'
                       ])
     
-    return rmse_train_dict, rmse_test_dict, coverage_train_dict, coverage_test_dict, df
+    return df
 
 
 def get_rank_report(df):
