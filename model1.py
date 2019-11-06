@@ -12,10 +12,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-import surprise
-from surprise import Reader
-from surprise.model_selection import cross_validate
-
 from time import time
 
 import pyspark
@@ -27,26 +23,6 @@ from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 
 from sklearn.neighbors import NearestNeighbors
-
-
-def baseline_bias_model(df):
-    """
-        Shows the performance of model based on just bias
-    """
-    ratings_pandas_df = df.drop('timestamp').toPandas()
-    ratings_pandas_df.columns = ['userID', 'itemID', 'rating']
-
-    reader = Reader(rating_scale=(-5.0, 5.0))
-    data = surprise.dataset.Dataset.load_from_df(df=ratings_pandas_df,
-                                                 reader=reader)
-    _ = cross_validate(
-        surprise.prediction_algorithms.baseline_only.BaselineOnly(),
-        data,
-        measures=['RMSE', 'MAE'],
-        cv=5,
-        verbose=1,
-        n_jobs=-1)
-
 
 def get_als_model(df,
                   rank,
@@ -119,7 +95,9 @@ def calculate_coverage(model):
 
 
 def get_best_rank(df, ranks=[2**i for i in range(7)]):
-    #based on rmse
+    """
+        Returns a report of performance metrics for ALS model for diffrent ranks
+    """
     rmse_train_dict = dict()
     coverage_train_dict = dict()
     rmse_test_dict = dict()
