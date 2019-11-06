@@ -35,7 +35,7 @@ def sample_df_threshold_use_pandas(df,
     df = df.loc[df['userId'] >= min_user_threshold]
     df = df.loc[df['movieId'] >= min_item_threshold]
     print(f'Length after thresholding: {len(df)}')
-    df = df.sample(n=500000, random_state=1)
+    df = df.sample(n=n, random_state=1)
     print(f'Length after sampling: {len(df)}')
     spark_df = pandas_to_spark(df)
     
@@ -101,6 +101,6 @@ if __name__ == '__main__':
 
     ratings_spark_df = sample_df_threshold_use_pandas(
         df,
-        ratio=0.1,
+        n=100000,
         min_user_threshold=5,
         min_item_threshold=5)
