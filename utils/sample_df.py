@@ -37,6 +37,7 @@ def sample_popular_df(df,
         on=['userId', 'movieId', 'rating', 'timestamp'],
         how='inner')
 
+#    breakpoint()
     df_sampled = df_popular.sample(n=final_sample_size)
     return df_sampled
 
@@ -48,11 +49,11 @@ df = load_pandas_df(
     CACHE_DIR=CACHE_DIR,
     use_cache=True)
 
-df_sampled_big = sample_popular_df(
-    df, movie_count=10000, user_count=50000, final_sample_size=100000)
-
-df_sampled_medium = sample_popular_df(
-    df, movie_count=5000, user_count=25000, final_sample_size=50000)
+#df_sampled_big = sample_popular_df(
+#    df, movie_count=10000, user_count=50000, final_sample_size=100000)
+#
+#df_sampled_medium = sample_popular_df(
+#    df, movie_count=5000, user_count=25000, final_sample_size=50000)
 
 df_sampled_small = sample_popular_df(
-    df, movie_count=1000, user_count=5000, final_sample_size=10000)
+    df, movie_count=5000, user_count=25000, final_sample_size=10000)
