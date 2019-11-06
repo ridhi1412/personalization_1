@@ -14,14 +14,16 @@ def lightfm_model(data, prec_at_k=10, train_split=0.8):
         https://arxiv.org/abs/1507.08439
     """
     model = LightFM(learning_rate=0.05, loss='bpr')
-    train, test = random_train_test_split(
-        data, test_percentage=1 - train_split)
+    train, test = random_train_test_split(data,
+                                          test_percentage=1 - train_split)
 
     model.fit(train, epochs=10)
 
     train_precision = precision_at_k(model, train, k=10)
-    test_precision = precision_at_k(
-        model, test, k=10, train_interactions=train)
+    test_precision = precision_at_k(model,
+                                    test,
+                                    k=10,
+                                    train_interactions=train)
 
     train_auc = auc_score(model, train)
     test_auc = auc_score(model, test, train_interactions=train)
