@@ -4,11 +4,17 @@ Created on Sat Oct 19 13:46:40 2019
 
 @author: rmahajan14
 """
+# conda install -c conda-forge scikit-surprise
+# conda install -c conda-forge lightfm
 
 from data_loader import load_spark_df, load_pandas_df
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
+import surprise
+from surprise import Reader
+from surprise.model_selection import cross_validate
 
 from time import time
 
@@ -21,6 +27,25 @@ from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 
 from sklearn.neighbors import NearestNeighbors
+
+
+def baseline_bias_model(df):
+    """
+        Shows the performance of model based on just bias
+    """
+    ratings_pandas_df = df.drop('timestamp').toPandas()
+    ratings_pandas_df.columns = ['userID', 'itemID', 'rating']
+
+    reader = Reader(rating_scale=(-5.0, 5.0))
+    data = surprise.dataset.Dataset.load_from_df(df=ratings_pandas_df,
+                                                 reader=reader)
+    _ = cross_validate(
+        surprise.prediction_algorithms.baseline_only.BaselineOnly(),
+        data,
+        measures=['RMSE', 'MAE'],
+        cv=5,
+        verbose=1,
+        n_jobs=-1)
 
 
 def get_als_model(df,
@@ -196,7 +221,7 @@ def plot_performance_als(report_df):
 
     plt.figure(figsize=(20, 5))
     plt.plot(report_df['Running_time'])
-    plt.title('Error vs Rank for ALS model')
+    plt.title('Running Time vs Rank for ALS model')
     plt.ylabel('Running Time (seconds)')
     plt.xlabel('Training Time vs Rank for ALS model')
     plt.show()
