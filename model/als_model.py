@@ -36,19 +36,19 @@ def get_als_model(df,
         'movieId').distinct().toPandas().values
 
     if model == 'ALS':
-        model = ALS(maxIter=5,
-                    regParam=0.09,
-                    rank=rank,
-                    userCol="userId",
-                    itemCol="movieId",
-                    ratingCol="rating",
-                    coldStartStrategy="drop",
-                    nonnegative=True)
+        model = ALS(
+            maxIter=5,
+            regParam=0.09,
+            rank=rank,
+            userCol="userId",
+            itemCol="movieId",
+            ratingCol="rating",
+            coldStartStrategy="drop",
+            nonnegative=True)
 
     if evaluator == 'Regression':
-        evaluator = RegressionEvaluator(metricName="rmse",
-                                        labelCol="rating",
-                                        predictionCol="prediction")
+        evaluator = RegressionEvaluator(
+            metricName="rmse", labelCol="rating", predictionCol="prediction")
     start = time()
     model = model.fit(train)
     running_time = time() - start
@@ -102,18 +102,19 @@ def get_best_rank(df, ranks=[2**i for i in range(7)]):
         coverage_test_dict[rank] = coverage_test
         running_time_dict[rank] = running_time
 
-    df = pd.DataFrame(data=np.asarray([
-        list(rmse_train_dict.keys()),
-        list(rmse_train_dict.values()),
-        list(rmse_test_dict.values()),
-        list(coverage_train_dict.values()),
-        list(coverage_test_dict.values()),
-        list(running_time_dict.values())
-    ]).T,
-                      columns=[
-                          'Rank', 'RMSE_train', 'RMSE_test', 'Coverage_train',
-                          'Coverage_test', 'Running_time'
-                      ])
+    df = pd.DataFrame(
+        data=np.asarray([
+            list(rmse_train_dict.keys()),
+            list(rmse_train_dict.values()),
+            list(rmse_test_dict.values()),
+            list(coverage_train_dict.values()),
+            list(coverage_test_dict.values()),
+            list(running_time_dict.values())
+        ]).T,
+        columns=[
+            'Rank', 'RMSE_train', 'RMSE_test', 'Coverage_train',
+            'Coverage_test', 'Running_time'
+        ])
 
     return df
 
@@ -129,16 +130,16 @@ def cross_validation(df,
     train, test = df.randomSplit([0.9, 0.1], seed=1)
 
     if model == 'ALS':
-        model = ALS(userCol="userId",
-                    itemCol="movieId",
-                    ratingCol="rating",
-                    coldStartStrategy="drop",
-                    nonnegative=True)
+        model = ALS(
+            userCol="userId",
+            itemCol="movieId",
+            ratingCol="rating",
+            coldStartStrategy="drop",
+            nonnegative=True)
 
     if evaluator == 'Regression':
-        evaluator = RegressionEvaluator(metricName="rmse",
-                                        labelCol="rating",
-                                        predictionCol="prediction")
+        evaluator = RegressionEvaluator(
+            metricName="rmse", labelCol="rating", predictionCol="prediction")
 
     if not param_grid:
         param_grid = ParamGridBuilder() \
@@ -147,10 +148,11 @@ def cross_validation(df,
         .addGrid(model.rank, [64, 128]) \
         .build()
 
-    crossval = CrossValidator(estimator=model,
-                              estimatorParamMaps=param_grid,
-                              evaluator=evaluator,
-                              numFolds=3)
+    crossval = CrossValidator(
+        estimator=model,
+        estimatorParamMaps=param_grid,
+        evaluator=evaluator,
+        numFolds=3)
 
     cvModel = crossval.fit(train)
     predictions = cvModel.bestModel.transform(test)

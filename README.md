@@ -10,7 +10,7 @@
 	3. Ridhi Mahajan
 	4. Sheetal Reddy
 
-In this project we perform an in-depth analysis of diffrent algorithms for movie recomendation. 
+In this project we perform an in-depth analysis of different algorithms for movie recomendation. 
 
 The report is in Final.ipynb
 

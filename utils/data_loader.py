@@ -14,7 +14,7 @@ from scipy import sparse
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 
-from utils.common import CACHE_DIR, DATA_DIR
+#from utils.common import CACHE_DIR, DATA_DIR
 
 
 def sample_data_frame(df,
@@ -42,12 +42,15 @@ def load_pandas_df(dir_name,
     """
         Loads pandas data frame from memory or loads from cache file
     """
+    #    breakpoint()
     cache_path = os.path.join(CACHE_DIR, f'{dir_name}_{file_name}.msgpack')
     if os.path.exists(cache_path) and use_cache:
         print(f'Loading from {cache_path}')
         df = pd.read_msgpack(cache_path)
     else:
+        print('-------------------ss', DATA_DIR)
         csv_path = os.path.join(DATA_DIR, dir_name, file_name + '.csv')
+        print('------------------- ', csv_path)
         df = pd.read_csv(csv_path)
         pd.to_msgpack(cache_path, df)
         print(f'Dumping to {cache_path}')
@@ -68,11 +71,12 @@ def load_spark_df(dir_name,
         print(f'Loading from {cache_path}')
         spark_df = pd.read_msgpack(cache_path)
     else:
-        pandas_df = load_pandas_df(dir_name=dir_name,
-                                   file_name=file_name,
-                                   use_cache=True,
-                                   DATA_DIR=DATA_DIR,
-                                   CACHE_DIR=CACHE_DIR)
+        pandas_df = load_pandas_df(
+            dir_name=dir_name,
+            file_name=file_name,
+            use_cache=True,
+            DATA_DIR=DATA_DIR,
+            CACHE_DIR=CACHE_DIR)
         #        sc = SparkContext.('local','example')  # if using locally
         sc = SparkContext.getOrCreate()  # else get multiple contexts error
         sql_sc = SQLContext(sc)
