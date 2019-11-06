@@ -54,12 +54,11 @@ def load_spark_df(dir_name,
         print(f'Loading from {cache_path}')
         spark_df = pd.read_msgpack(cache_path)
     else:
-        pandas_df = load_pandas_df(
-            dir_name=dir_name,
-            file_name=file_name,
-            use_cache=True,
-            DATA_DIR=DATA_DIR,
-            CACHE_DIR=CACHE_DIR)
+        pandas_df = load_pandas_df(dir_name=dir_name,
+                                   file_name=file_name,
+                                   use_cache=True,
+                                   DATA_DIR=DATA_DIR,
+                                   CACHE_DIR=CACHE_DIR)
         #        sc = SparkContext.('local','example')  # if using locally
         sc = SparkContext.getOrCreate()  # else get multiple contexts error
         sql_sc = SQLContext(sc)
@@ -110,12 +109,11 @@ if __name__ == '__main__':
     DATA_DIR = r'P:\rmahajan14\columbia\fall 2019\Personalization\project_1\personalization_1\data'
 
     #    movies_pandas_df = load_pandas_df(dir_name, 'movies', use_cache=True)
-    ratings_pandas_df = load_pandas_df(
-        dir_name,
-        'ratings',
-        DATA_DIR=DATA_DIR,
-        CACHE_DIR=CACHE_DIR,
-        use_cache=True)
+    ratings_pandas_df = load_pandas_df(dir_name,
+                                       'ratings',
+                                       DATA_DIR=DATA_DIR,
+                                       CACHE_DIR=CACHE_DIR,
+                                       use_cache=True)
 
 #    movies_spark_df = load_spark_df(dir_name, 'movies', use_cache=True)
 #    ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)

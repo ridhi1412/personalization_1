@@ -25,8 +25,7 @@ def sample_df_threshold_use_pandas(df,
                                    n=100000,
                                    min_user_threshold=5,
                                    min_item_threshold=5,
-                                   quite=True
-                                   ):
+                                   quite=True):
     """
         Samples and applies a threshold filter on the dataframe
     """
@@ -45,9 +44,9 @@ def sample_df_threshold_use_pandas(df,
         df = df.loc[df['userId'] >= min_user_threshold]
         df = df.loc[df['movieId'] >= min_item_threshold]
         df = df.sample(n=n, random_state=1)
-        
+
         spark_df = pandas_to_spark(df)
-        
+
     return spark_df
 
 
@@ -82,34 +81,31 @@ def sample_popular_df(df,
     df_popular_users = df.loc[df['userId'].isin(popular_users['userId'])]
 
     #now merge these 2 to get intersection of most popular movies and users
-    df_popular = pd.merge(
-        df_popular_movies,
-        df_popular_users,
-        on=['userId', 'movieId', 'rating', 'timestamp'],
-        how='inner')
+    df_popular = pd.merge(df_popular_movies,
+                          df_popular_users,
+                          on=['userId', 'movieId', 'rating', 'timestamp'],
+                          how='inner')
     df_sampled = df_popular.sample(n=final_sample_size)
     return df_sampled
 
 
 if __name__ == '__main__':
-    df = load_pandas_df(
-        dir_name,
-        'ratings',
-        DATA_DIR=DATA_DIR,
-        CACHE_DIR=CACHE_DIR,
-        use_cache=True)
+    df = load_pandas_df(dir_name,
+                        'ratings',
+                        DATA_DIR=DATA_DIR,
+                        CACHE_DIR=CACHE_DIR,
+                        use_cache=True)
 
-#    df_sampled_big = sample_popular_df(
-#        df, movie_count=10000, user_count=50000, final_sample_size=100000)
-#
-#    df_sampled_medium = sample_popular_df(
-#        df, movie_count=5000, user_count=25000, final_sample_size=50000)
-#
-#    df_sampled_small = sample_popular_df(
-#        df, movie_count=5000, user_count=25000, final_sample_size=10000)
+    #    df_sampled_big = sample_popular_df(
+    #        df, movie_count=10000, user_count=50000, final_sample_size=100000)
+    #
+    #    df_sampled_medium = sample_popular_df(
+    #        df, movie_count=5000, user_count=25000, final_sample_size=50000)
+    #
+    #    df_sampled_small = sample_popular_df(
+    #        df, movie_count=5000, user_count=25000, final_sample_size=10000)
 
-    ratings_spark_df = sample_df_threshold_use_pandas(
-        df,
-        n=100000,
-        min_user_threshold=5,
-        min_item_threshold=5)
+    ratings_spark_df = sample_df_threshold_use_pandas(df,
+                                                      n=100000,
+                                                      min_user_threshold=5,
+                                                      min_item_threshold=5)

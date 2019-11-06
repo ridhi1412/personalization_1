@@ -7,6 +7,7 @@ Created on Sat Oct 19 13:46:40 2019
 # conda install -c conda-forge scikit-surprise
 # conda install -c conda-forge lightfm
 # conda install tqdm
+import math
 
 from tqdm.auto import tqdm
 from utils.data_loader import load_spark_df, load_pandas_df
@@ -29,7 +30,6 @@ except:
     from utils.sample_df import sample_df_threshold_use_pandas
 
 
-
 def get_als_model(df,
                   rank,
                   split=[0.9, 0.1],
@@ -43,19 +43,19 @@ def get_als_model(df,
         'movieId').distinct().toPandas().values
 
     if model == 'ALS':
-        model = ALS(
-            maxIter=5,
-            regParam=0.09,
-            rank=rank,
-            userCol="userId",
-            itemCol="movieId",
-            ratingCol="rating",
-            coldStartStrategy="drop",
-            nonnegative=True)
+        model = ALS(maxIter=5,
+                    regParam=0.09,
+                    rank=rank,
+                    userCol="userId",
+                    itemCol="movieId",
+                    ratingCol="rating",
+                    coldStartStrategy="drop",
+                    nonnegative=True)
 
     if evaluator == 'Regression':
-        evaluator = RegressionEvaluator(
-            metricName="rmse", labelCol="rating", predictionCol="prediction")
+        evaluator = RegressionEvaluator(metricName="rmse",
+                                        labelCol="rating",
+                                        predictionCol="prediction")
     start = time()
     model = model.fit(train)
     running_time = time() - start
@@ -109,19 +109,18 @@ def get_best_rank(df, ranks=[2**i for i in range(7)]):
         coverage_test_dict[rank] = coverage_test
         running_time_dict[rank] = running_time
 
-    df = pd.DataFrame(
-        data=np.asarray([
-            list(rmse_train_dict.keys()),
-            list(rmse_train_dict.values()),
-            list(rmse_test_dict.values()),
-            list(coverage_train_dict.values()),
-            list(coverage_test_dict.values()),
-            list(running_time_dict.values())
-        ]).T,
-        columns=[
-            'Rank', 'RMSE_train', 'RMSE_test', 'Coverage_train',
-            'Coverage_test', 'Running_time'
-        ])
+    df = pd.DataFrame(data=np.asarray([
+        list(rmse_train_dict.keys()),
+        list(rmse_train_dict.values()),
+        list(rmse_test_dict.values()),
+        list(coverage_train_dict.values()),
+        list(coverage_test_dict.values()),
+        list(running_time_dict.values())
+    ]).T,
+                      columns=[
+                          'Rank', 'RMSE_train', 'RMSE_test', 'Coverage_train',
+                          'Coverage_test', 'Running_time'
+                      ])
 
     return df
 
@@ -137,16 +136,16 @@ def cross_validation(df,
     train, test = df.randomSplit([0.9, 0.1], seed=1)
 
     if model == 'ALS':
-        model = ALS(
-            userCol="userId",
-            itemCol="movieId",
-            ratingCol="rating",
-            coldStartStrategy="drop",
-            nonnegative=True)
+        model = ALS(userCol="userId",
+                    itemCol="movieId",
+                    ratingCol="rating",
+                    coldStartStrategy="drop",
+                    nonnegative=True)
 
     if evaluator == 'Regression':
-        evaluator = RegressionEvaluator(
-            metricName="rmse", labelCol="rating", predictionCol="prediction")
+        evaluator = RegressionEvaluator(metricName="rmse",
+                                        labelCol="rating",
+                                        predictionCol="prediction")
 
     if not param_grid:
         param_grid = ParamGridBuilder() \
@@ -155,11 +154,10 @@ def cross_validation(df,
         .addGrid(model.rank, [64, 128]) \
         .build()
 
-    crossval = CrossValidator(
-        estimator=model,
-        estimatorParamMaps=param_grid,
-        evaluator=evaluator,
-        numFolds=3)
+    crossval = CrossValidator(estimator=model,
+                              estimatorParamMaps=param_grid,
+                              evaluator=evaluator,
+                              numFolds=3)
 
     cvModel = crossval.fit(train)
     predictions = cvModel.bestModel.transform(test)
@@ -185,7 +183,8 @@ def cross_validation(df,
 
     return (best_hyper_parameter, cvModel)
 
-def get_best_sample_size(df, sample_size = [10**i for i in range(4,6)]):
+
+def get_best_sample_size(df, sample_size=[10**i for i in range(4, 6)]):
     """
         Returns a report for sample size
     """
@@ -197,16 +196,17 @@ def get_best_sample_size(df, sample_size = [10**i for i in range(4,6)]):
 
     for size in tqdm(sample_size):
 
-        temp_spark_df = sample_df_threshold_use_pandas(df, 
-                                                          n=size, 
-                                                          min_user_threshold=5, 
-                                                          min_item_threshold=5)
+        temp_spark_df = sample_df_threshold_use_pandas(df,
+                                                       n=size,
+                                                       min_user_threshold=5,
+                                                       min_item_threshold=5)
 
-        predictions, model, rmse_train, rmse_test, coverage_train, coverage_test, running_time = get_als_model(temp_spark_df,
-                      rank=64,
-                      split=[0.9, 0.1],
-                      model='ALS',
-                      evaluator='Regression')
+        predictions, model, rmse_train, rmse_test, coverage_train, coverage_test, running_time = get_als_model(
+            temp_spark_df,
+            rank=64,
+            split=[0.9, 0.1],
+            model='ALS',
+            evaluator='Regression')
 
         rmse_train_dict[size] = rmse_train
         coverage_train_dict[size] = coverage_train
@@ -214,33 +214,33 @@ def get_best_sample_size(df, sample_size = [10**i for i in range(4,6)]):
         coverage_test_dict[size] = coverage_test
         running_time_dict[size] = running_time
 
-    df = pd.DataFrame(
-        data=np.asarray([
-            list(rmse_train_dict.keys()),
-            list(rmse_train_dict.values()),
-            list(rmse_test_dict.values()),
-            list(coverage_train_dict.values()),
-            list(coverage_test_dict.values()),
-            list(running_time_dict.values())
-        ]).T,
-        columns=[
-            'Sample_size', 'RMSE_train', 'RMSE_test', 'Coverage_train',
-            'Coverage_test', 'Running_time'
-        ])
+    df = pd.DataFrame(data=np.asarray([
+        list(rmse_train_dict.keys()),
+        list(rmse_train_dict.values()),
+        list(rmse_test_dict.values()),
+        list(coverage_train_dict.values()),
+        list(coverage_test_dict.values()),
+        list(running_time_dict.values())
+    ]).T,
+                      columns=[
+                          'Sample_size', 'RMSE_train', 'RMSE_test',
+                          'Coverage_train', 'Coverage_test', 'Running_time'
+                      ])
 
     return df
 
+
 def plot_performance_als(report_df, report_type='rank'):
-    if report_type=='rank':
+    if report_type == 'rank':
         fig, ax = plt.subplots(1, 2, figsize=(20, 5))
-    
+
         ax[0].plot(report_df['RMSE_train'])
         ax[0].plot(report_df['RMSE_test'])
         ax[0].legend(['Train', 'Test'])
         ax[0].title.set_text('Error vs Rank for ALS model')
         ax[0].set_ylabel('RMSE')
         ax[0].set_xlabel('Log_2(Rank)')
-    
+
         ax[1].plot(report_df['Coverage_train'])
         ax[1].plot(report_df['Coverage_test'])
         ax[1].legend(['Train', 'Test'])
@@ -248,42 +248,48 @@ def plot_performance_als(report_df, report_type='rank'):
         ax[1].set_ylabel('Coverage')
         ax[1].set_xlabel('Log_2(Rank)')
         plt.show()
-    
+
         plt.figure(figsize=(20, 5))
         plt.plot(report_df['Running_time'])
         plt.title('Running Time vs Rank for ALS model')
         plt.ylabel('Running Time (seconds)')
-        plt.xlabel('Training Time vs Rank for ALS model')
+        plt.xlabel('Log_2(Rank)')
         plt.show()
-    
+
         print('\n')
-    
-    elif report_type=='sample':
+
+    elif report_type == 'sample':
         fig, ax = plt.subplots(1, 2, figsize=(20, 5))
-    
+        low = int(math.log10(report_df['Sample_size'].iloc[0]))
+        high = int(math.log10(report_df['Sample_size'].iloc[-1]))
+        x_tick = [i for i in range(low, high)]
         ax[0].plot(report_df['RMSE_train'])
         ax[0].plot(report_df['RMSE_test'])
         ax[0].legend(['Train', 'Test'])
         ax[0].title.set_text('Error vs Sample Size for ALS model')
         ax[0].set_ylabel('RMSE')
-        ax[0].set_xlabel('Log_10(Sample_size)')
-    
+        ax[0].set_xlabel('Log_10(Sample_size)+4')
+        #ax[0].set_xticks(x_tick)
+
         ax[1].plot(report_df['Coverage_train'])
         ax[1].plot(report_df['Coverage_test'])
         ax[1].legend(['Train', 'Test'])
         ax[1].title.set_text('Coverage vs Sample Size for ALS model')
         ax[1].set_ylabel('Coverage')
-        ax[1].set_xlabel('Log_10(Sample_size)')
+        ax[1].set_xlabel('Log_10(Sample_size)+4')
+        #ax[1].set_xticks(x_tick)
         plt.show()
-    
+
         plt.figure(figsize=(20, 5))
         plt.plot(report_df['Running_time'])
         plt.title('Running Time vs Sample Size for ALS model')
         plt.ylabel('Running Time (seconds)')
-        plt.xlabel('Training Time vs Sample Size for ALS model')
+        plt.xlabel('Log_10(Sample_size)+4')
+        #plt.xticks(x_tick)
         plt.show()
-    
+
         print('\n')
+
 
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
