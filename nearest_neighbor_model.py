@@ -23,11 +23,12 @@ def KNN(model, df):
 
     reader = Reader(rating_scale=(-5.0, 5.0))
     data = surprise.dataset.Dataset.load_from_df(df=ratings_pandas_df,
-                                                     reader=reader)
-    _ = cross_validate(
-            model,
-            data,
-            measures=['RMSE', 'MAE'],
-            cv=5,
-            verbose=1,
-            n_jobs=-1)
+                                                 reader=reader)
+    _ = cross_validate(model,
+                       data,
+                       measures=['RMSE', 'MAE'],
+                       cv=5,
+                       verbose=1,
+                       n_jobs=-1)
+
+    print('\n')

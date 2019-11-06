@@ -24,6 +24,7 @@ from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 
 from sklearn.neighbors import NearestNeighbors
 
+
 def get_als_model(df,
                   rank,
                   split=[0.9, 0.1],
@@ -203,6 +204,8 @@ def plot_performance_als(report_df):
     plt.ylabel('Running Time (seconds)')
     plt.xlabel('Training Time vs Rank for ALS model')
     plt.show()
+
+    print('\n')
 
 
 if __name__ == '__main__':
