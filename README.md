@@ -33,7 +33,7 @@ Code is structured as follows
     |     ├── lightfm_model.py			# LightFm
     │     └── nearest_neighbor_model.py		# Nearest Neighbors model with Z-score scaling of users
     ├── data                     			# Data files
-    ├── cache                    			# Data cache
+    ├── cache                    			# Data cache used to avoid re-reading the data each time model changes are made
     ├── Final.ipynb                   		# Report Markdown
     ├── LICENSE
     └── README.md
