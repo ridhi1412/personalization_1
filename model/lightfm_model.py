@@ -61,3 +61,5 @@ def lightfm_model(data, prec_at_k=10, train_split=0.8):
     ax[1, 1].set_xlabel(f'Precision @ {prec_at_k}')
 
     plt.show()
+
+    print('\n')

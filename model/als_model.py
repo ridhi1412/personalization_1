@@ -7,7 +7,7 @@ Created on Sat Oct 19 13:46:40 2019
 # conda install -c conda-forge scikit-surprise
 # conda install -c conda-forge lightfm
 
-from data_loader import load_spark_df, load_pandas_df
+from utils.data_loader import load_spark_df, load_pandas_df
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,7 +22,6 @@ from pyspark.ml.recommendation import ALS
 from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 
-from sklearn.neighbors import NearestNeighbors
 
 def get_als_model(df,
                   rank,
@@ -71,21 +70,11 @@ def get_als_model(df,
             coverage_test, running_time)
 
 
-def get_nearest_neighbours_model():
-    from scipy.sparse import csr_matrix
-    #make an object for the NearestNeighbors Class.
-    model_knn = NearestNeighbors(metric='cosine',
-                                 algorithm='brute',
-                                 n_neighbors=20,
-                                 n_jobs=-1)
-    # fit the dataset
-    model_knn.fit(movie_user_mat_sparse)
-
-
 def calculate_coverage(model):
+    """
+        Returns all unique movies ids recommended atleast once to a user
+    """
     user_recos = model.recommendForAllUsers(numItems=10)
-    #    breakpoint()
-
     df1 = user_recos.select(explode(user_recos.recommendations).alias('col1'))
     df2 = df1.select('col1.*')
     df3 = df2.select('movieId').distinct()
@@ -129,15 +118,6 @@ def get_best_rank(df, ranks=[2**i for i in range(7)]):
     return df
 
 
-def get_rank_report(df):
-    rank = 64
-    predictions, model, rmse = get_als_model_rmse(df, rank)
-    valuesAndPreds = predictions.rdd.map(lambda x: (x.rating, x.prediction))
-    regressionmetrics = RegressionMetrics(valuesAndPreds)
-    rankingmetrics = RankingMetrics(valuesAndPreds)
-    print("MAE = {regressionmetrics.meanAbsoluteError}")
-
-
 def cross_validation(df,
                      model='ALS',
                      evaluator='Regression',
@@ -173,10 +153,28 @@ def cross_validation(df,
                               numFolds=3)
 
     cvModel = crossval.fit(train)
-    predictions = cvModel.transform(test)
+    predictions = cvModel.bestModel.transform(test)
     rmse = evaluator.evaluate(predictions)
-    print(f'RMSE is {rmse}')
-    print(cvModel.getEstimatorParamMaps()[0])
+    print(f'RMSE of Best Model on Test Set: {rmse:.4f}')
+    #print(cvModel.bestModel)
+    #print('\n')
+
+    label = list()
+    value = list()
+
+    temp = cvModel.getEstimatorParamMaps()[np.argmax(cvModel.avgMetrics)]
+    list(temp.keys())[0].name
+    list(temp.values())[0]
+
+    k = list(temp.keys())
+    v = list(temp.values())
+    for i in range(len(temp)):
+        label.append(k[i].name)
+        value.append(v[i])
+    best_hyper_parameter = pd.DataFrame(data=[label, value]).T
+    best_hyper_parameter.columns = ['HyperParameter', 'Value']
+
+    return (best_hyper_parameter, cvModel)
 
 
 def plot_performance_als(report_df):
@@ -203,6 +201,8 @@ def plot_performance_als(report_df):
     plt.ylabel('Running Time (seconds)')
     plt.xlabel('Training Time vs Rank for ALS model')
     plt.show()
+
+    print('\n')
 
 
 if __name__ == '__main__':
