@@ -7,7 +7,7 @@ Created on Sat Oct 19 13:46:40 2019
 # conda install -c conda-forge scikit-surprise
 # conda install -c conda-forge lightfm
 
-from data_loader import load_spark_df, load_pandas_df
+from utils.data_loader import load_spark_df, load_pandas_df
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
