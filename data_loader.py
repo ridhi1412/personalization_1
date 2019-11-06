@@ -22,6 +22,9 @@ def load_pandas_df(dir_name,
                    use_cache=True,
                    DATA_DIR=None,
                    CACHE_DIR=None):
+    """
+        Loads pandas data frame from memory or loads from cache file
+    """
     cache_path = os.path.join(CACHE_DIR, f'{dir_name}_{file_name}.msgpack')
     if os.path.exists(cache_path) and use_cache:
         print(f'Loading from {cache_path}')
@@ -39,6 +42,9 @@ def load_spark_df(dir_name,
                   use_cache=True,
                   DATA_DIR=None,
                   CACHE_DIR=None):
+    """
+        Converts a pandas data frame loaded from memory into a spark data frame
+    """
     cache_path = os.path.join(CACHE_DIR,
                               f'spark_{dir_name}_{file_name}.msgpack')
     if os.path.exists(cache_path) and use_cache:
@@ -58,6 +64,10 @@ def load_spark_df(dir_name,
 
 
 def spark_to_sparse(spark_df, user_or_item='user'):
+    """
+        Makes a spark data frame sparse for models such as nearest neighbors
+        and LightFM
+    """
     df = spark_df.drop('timestamp')
     pd_df = df.toPandas()
 
