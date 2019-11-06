@@ -8,6 +8,7 @@ Created on Sat Oct 19 13:46:40 2019
 from data_loader import load_spark_df, load_pandas_df
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from time import time
 
@@ -173,6 +174,32 @@ def cross_validation(df,
     rmse = evaluator.evaluate(predictions)
     print(f'RMSE is {rmse}')
     print(cvModel.getEstimatorParamMaps()[0])
+
+
+def plot_performance_als(report_df):
+    fig, ax = plt.subplots(1, 2, figsize=(20, 5))
+
+    ax[0].plot(report_df['RMSE_train'])
+    ax[0].plot(report_df['RMSE_test'])
+    ax[0].legend(['Train', 'Test'])
+    ax[0].title.set_text('Error vs Rank for ALS model')
+    ax[0].set_ylabel('RMSE')
+    ax[0].set_xlabel('Log_2(Rank)')
+
+    ax[1].plot(report_df['Coverage_train'])
+    ax[1].plot(report_df['Coverage_test'])
+    ax[1].legend(['Train', 'Test'])
+    ax[1].title.set_text('Coverage vs Rank for ALS model')
+    ax[1].set_ylabel('Coverage')
+    ax[1].set_xlabel('Log_2(Rank)')
+    plt.show()
+
+    plt.figure(figsize=(20, 5))
+    plt.plot(report_df['Running_time'])
+    plt.title('Error vs Rank for ALS model')
+    plt.ylabel('Running Time (seconds)')
+    plt.xlabel('Training Time vs Rank for ALS model')
+    plt.show()
 
 
 if __name__ == '__main__':
