@@ -17,6 +17,23 @@ from pyspark.sql import SQLContext
 from utils.common import CACHE_DIR, DATA_DIR
 
 
+def sample_data_frame(df,
+                      ratio=0.2,
+                      min_user_threshold=5,
+                      min_item_threshold=5):
+    """
+        Samples and applies a threshold filter on the dataframe
+    """
+    print(f'Length before sampling: {df.count()}')
+    sample_df = df.sample(False, ratio, 42)
+    print(f'Length after sampling: {sample_df.count()}')
+    sample_df = sample_df.filter(sample_df['userId'] >= min_user_threshold)
+    sample_df = sample_df.filter(sample_df['movieId'] >= min_item_threshold)
+    print(f'Length after thresholding: {sample_df.count()}')
+
+    return sample_df
+
+
 def load_pandas_df(dir_name,
                    file_name,
                    use_cache=True,
