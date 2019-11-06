@@ -4,6 +4,8 @@ Created on Sat Oct 19 13:46:40 2019
 
 @author: rmahajan14
 """
+# conda install -c conda-forge scikit-surprise
+# conda install -c conda-forge lightfm
 
 from data_loader import load_spark_df, load_pandas_df
 import pandas as pd
@@ -21,7 +23,6 @@ from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 
 from sklearn.neighbors import NearestNeighbors
-
 
 def get_als_model(df,
                   rank,
@@ -94,7 +95,9 @@ def calculate_coverage(model):
 
 
 def get_best_rank(df, ranks=[2**i for i in range(7)]):
-    #based on rmse
+    """
+        Returns a report of performance metrics for ALS model for diffrent ranks
+    """
     rmse_train_dict = dict()
     coverage_train_dict = dict()
     rmse_test_dict = dict()
@@ -196,7 +199,7 @@ def plot_performance_als(report_df):
 
     plt.figure(figsize=(20, 5))
     plt.plot(report_df['Running_time'])
-    plt.title('Error vs Rank for ALS model')
+    plt.title('Running Time vs Rank for ALS model')
     plt.ylabel('Running Time (seconds)')
     plt.xlabel('Training Time vs Rank for ALS model')
     plt.show()
