@@ -12,78 +12,47 @@ dir_name = 'ml-20m'
 CACHE_DIR = r'P:\rmahajan14\columbia\fall 2019\Personalization\project_1\personalization_1\cache'
 DATA_DIR = r'P:\rmahajan14\columbia\fall 2019\Personalization\project_1\personalization_1\data'
 
-# Loading the Data Frames
+
+def random_sample(df, frac):
+    df = df.sample(frac=frac, random_state=1)
+    return df
+
+def sample_popular_df(df,
+                      movie_count=10000,
+                      user_count=50000,
+                      final_sample_size=100000):
+    movie_counts = df['movieId'].value_counts().reset_index()
+    user_counts = df['userId'].value_counts().reset_index()
+
+    popular_movies = movie_counts.iloc[:movie_count]  #top 10000 movies
+    popular_users = user_counts.iloc[:user_count]  #top 100000 users
+
+    df_popular_movies = df.loc[df['movieId'].isin(popular_movies['movieId'])]
+    df_popular_users = df.loc[df['userId'].isin(popular_users['userId'])]
+
+    #now merge these 2 to get intersection of most popular movies and users
+    df_popular = pd.merge(
+        df_popular_movies,
+        df_popular_users,
+        on=['userId', 'movieId', 'rating', 'timestamp'],
+        how='inner')
+
+    df_sampled = df_popular.sample(n=final_sample_size)
+    return df_sampled
+
+
 df = load_pandas_df(
     dir_name,
     'ratings',
     DATA_DIR=DATA_DIR,
     CACHE_DIR=CACHE_DIR,
-    use_cache=False)
+    use_cache=True)
 
+df_sampled_big = sample_popular_df(
+    df, movie_count=10000, user_count=50000, final_sample_size=100000)
 
-def random_sample(large_df, frac):
-  df = large_df.sample(frac=frac, random_state=1)
-  return df
+df_sampled_medium = sample_popular_df(
+    df, movie_count=5000, user_count=25000, final_sample_size=50000)
 
-def choose_popular_movies():
-  pass
-
-
-#def counts_per_user():
-movie_counts = df['movieId'].value_counts().reset_index()
-user_counts = df['userId'].value_counts().reset_index()
-
-popular_movies = movie_counts.iloc[:1000]
-popular_users = user_counts.iloc[:10000]
-
-
-df_popular_movies = df.loc[df['movieId'].isin(popular_movies['movieId'])]
-df_popular_users = df.loc[df['userId'].isin(popular_users['userId'])]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+df_sampled_small = sample_popular_df(
+    df, movie_count=1000, user_count=5000, final_sample_size=10000)
