@@ -14,7 +14,7 @@ from scipy import sparse
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 
-from utils.common import CACHE_DIR, DATA_DIR
+#from utils.common import CACHE_DIR, DATA_DIR
 
 
 def load_pandas_df(dir_name,
