@@ -117,6 +117,7 @@ def get_best_rank(df, ranks=[2**i for i in range(7)]):
 
     return df
 
+
 def cross_validation(df,
                      model='ALS',
                      evaluator='Regression',
@@ -152,11 +153,28 @@ def cross_validation(df,
                               numFolds=3)
 
     cvModel = crossval.fit(train)
-    predictions = cvModel.transform(test)
+    predictions = cvModel.bestModel.transform(test)
     rmse = evaluator.evaluate(predictions)
-    print(f'RMSE is {rmse}')
-    print(cvModel.getEstimatorParamMaps()[0])
-    print('\n')
+    print(f'RMSE of Best Model on Test Set: {rmse:.4f}')
+    #print(cvModel.bestModel)
+    #print('\n')
+
+    label = list()
+    value = list()
+
+    temp = cvModel.getEstimatorParamMaps()[np.argmax(cvModel.avgMetrics)]
+    list(temp.keys())[0].name
+    list(temp.values())[0]
+
+    k = list(temp.keys())
+    v = list(temp.values())
+    for i in range(len(temp)):
+        label.append(k[i].name)
+        value.append(v[i])
+    best_hyper_parameter = pd.DataFrame(data=[label, value]).T
+    best_hyper_parameter.columns = ['HyperParameter', 'Value']
+
+    return (best_hyper_parameter, cvModel)
 
 
 def plot_performance_als(report_df):
