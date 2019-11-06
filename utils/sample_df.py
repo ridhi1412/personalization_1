@@ -24,21 +24,30 @@ def random_sample(df, frac):
 def sample_df_threshold_use_pandas(df,
                                    n=100000,
                                    min_user_threshold=5,
-                                   min_item_threshold=5):
+                                   min_item_threshold=5,
+                                   quite=True
+                                   ):
     """
         Samples and applies a threshold filter on the dataframe
     """
     #    print(f'Length before sampling: {df.count()}')
     #    sample_df = df.sample(False, ratio, 42)
     #    print(f'Length after sampling: {sample_df.count()}')
-    print(f'Length before sampling: {len(df)}')
-    df = df.loc[df['userId'] >= min_user_threshold]
-    df = df.loc[df['movieId'] >= min_item_threshold]
-    print(f'Length after thresholding: {len(df)}')
-    df = df.sample(n=n, random_state=1)
-    print(f'Length after sampling: {len(df)}')
-    spark_df = pandas_to_spark(df)
-    
+    if not quite:
+        print(f'Length before sampling: {len(df)}')
+        df = df.loc[df['userId'] >= min_user_threshold]
+        df = df.loc[df['movieId'] >= min_item_threshold]
+        print(f'Length after thresholding: {len(df)}')
+        df = df.sample(n=n, random_state=1)
+        print(f'Length after sampling: {len(df)}')
+        spark_df = pandas_to_spark(df)
+    else:
+        df = df.loc[df['userId'] >= min_user_threshold]
+        df = df.loc[df['movieId'] >= min_item_threshold]
+        df = df.sample(n=n, random_state=1)
+        
+        spark_df = pandas_to_spark(df)
+        
     return spark_df
 
 

@@ -6,7 +6,9 @@ Created on Sat Oct 19 13:46:40 2019
 """
 # conda install -c conda-forge scikit-surprise
 # conda install -c conda-forge lightfm
+# conda install tqdm
 
+from tqdm.auto import tqdm
 from utils.data_loader import load_spark_df, load_pandas_df
 import pandas as pd
 import numpy as np
@@ -21,6 +23,11 @@ from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.recommendation import ALS
 from pyspark.mllib.evaluation import RegressionMetrics, RankingMetrics
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
+try:
+    from sample_df import sample_df_threshold_use_pandas
+except:
+    from utils.sample_df import sample_df_threshold_use_pandas
+
 
 
 def get_als_model(df,
@@ -93,7 +100,7 @@ def get_best_rank(df, ranks=[2**i for i in range(7)]):
     coverage_test_dict = dict()
     running_time_dict = dict()
 
-    for rank in ranks:
+    for rank in tqdm(ranks):
         _, model, rmse_train, rmse_test, coverage_train, coverage_test, running_time = get_als_model(
             df, rank, model='ALS', evaluator='Regression')
         rmse_train_dict[rank] = rmse_train
@@ -178,34 +185,105 @@ def cross_validation(df,
 
     return (best_hyper_parameter, cvModel)
 
+def get_best_sample_size(df, sample_size = [10**i for i in range(4,6)]):
+    """
+        Returns a report for sample size
+    """
+    rmse_train_dict = dict()
+    coverage_train_dict = dict()
+    rmse_test_dict = dict()
+    coverage_test_dict = dict()
+    running_time_dict = dict()
 
-def plot_performance_als(report_df):
-    fig, ax = plt.subplots(1, 2, figsize=(20, 5))
+    for size in tqdm(sample_size):
 
-    ax[0].plot(report_df['RMSE_train'])
-    ax[0].plot(report_df['RMSE_test'])
-    ax[0].legend(['Train', 'Test'])
-    ax[0].title.set_text('Error vs Rank for ALS model')
-    ax[0].set_ylabel('RMSE')
-    ax[0].set_xlabel('Log_2(Rank)')
+        temp_spark_df = sample_df_threshold_use_pandas(df, 
+                                                          n=size, 
+                                                          min_user_threshold=5, 
+                                                          min_item_threshold=5)
 
-    ax[1].plot(report_df['Coverage_train'])
-    ax[1].plot(report_df['Coverage_test'])
-    ax[1].legend(['Train', 'Test'])
-    ax[1].title.set_text('Coverage vs Rank for ALS model')
-    ax[1].set_ylabel('Coverage')
-    ax[1].set_xlabel('Log_2(Rank)')
-    plt.show()
+        predictions, model, rmse_train, rmse_test, coverage_train, coverage_test, running_time = get_als_model(temp_spark_df,
+                      rank=64,
+                      split=[0.9, 0.1],
+                      model='ALS',
+                      evaluator='Regression')
 
-    plt.figure(figsize=(20, 5))
-    plt.plot(report_df['Running_time'])
-    plt.title('Running Time vs Rank for ALS model')
-    plt.ylabel('Running Time (seconds)')
-    plt.xlabel('Training Time vs Rank for ALS model')
-    plt.show()
+        rmse_train_dict[size] = rmse_train
+        coverage_train_dict[size] = coverage_train
+        rmse_test_dict[size] = rmse_test
+        coverage_test_dict[size] = coverage_test
+        running_time_dict[size] = running_time
 
-    print('\n')
+    df = pd.DataFrame(
+        data=np.asarray([
+            list(rmse_train_dict.keys()),
+            list(rmse_train_dict.values()),
+            list(rmse_test_dict.values()),
+            list(coverage_train_dict.values()),
+            list(coverage_test_dict.values()),
+            list(running_time_dict.values())
+        ]).T,
+        columns=[
+            'Sample_size', 'RMSE_train', 'RMSE_test', 'Coverage_train',
+            'Coverage_test', 'Running_time'
+        ])
 
+    return df
+
+def plot_performance_als(report_df, report_type='rank'):
+    if report_type=='rank':
+        fig, ax = plt.subplots(1, 2, figsize=(20, 5))
+    
+        ax[0].plot(report_df['RMSE_train'])
+        ax[0].plot(report_df['RMSE_test'])
+        ax[0].legend(['Train', 'Test'])
+        ax[0].title.set_text('Error vs Rank for ALS model')
+        ax[0].set_ylabel('RMSE')
+        ax[0].set_xlabel('Log_2(Rank)')
+    
+        ax[1].plot(report_df['Coverage_train'])
+        ax[1].plot(report_df['Coverage_test'])
+        ax[1].legend(['Train', 'Test'])
+        ax[1].title.set_text('Coverage vs Rank for ALS model')
+        ax[1].set_ylabel('Coverage')
+        ax[1].set_xlabel('Log_2(Rank)')
+        plt.show()
+    
+        plt.figure(figsize=(20, 5))
+        plt.plot(report_df['Running_time'])
+        plt.title('Running Time vs Rank for ALS model')
+        plt.ylabel('Running Time (seconds)')
+        plt.xlabel('Training Time vs Rank for ALS model')
+        plt.show()
+    
+        print('\n')
+    
+    elif report_type=='sample':
+        fig, ax = plt.subplots(1, 2, figsize=(20, 5))
+    
+        ax[0].plot(report_df['RMSE_train'])
+        ax[0].plot(report_df['RMSE_test'])
+        ax[0].legend(['Train', 'Test'])
+        ax[0].title.set_text('Error vs Sample Size for ALS model')
+        ax[0].set_ylabel('RMSE')
+        ax[0].set_xlabel('Log_10(Sample_size)')
+    
+        ax[1].plot(report_df['Coverage_train'])
+        ax[1].plot(report_df['Coverage_test'])
+        ax[1].legend(['Train', 'Test'])
+        ax[1].title.set_text('Coverage vs Sample Size for ALS model')
+        ax[1].set_ylabel('Coverage')
+        ax[1].set_xlabel('Log_10(Sample_size)')
+        plt.show()
+    
+        plt.figure(figsize=(20, 5))
+        plt.plot(report_df['Running_time'])
+        plt.title('Running Time vs Sample Size for ALS model')
+        plt.ylabel('Running Time (seconds)')
+        plt.xlabel('Training Time vs Sample Size for ALS model')
+        plt.show()
+    
+        print('\n')
 
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
