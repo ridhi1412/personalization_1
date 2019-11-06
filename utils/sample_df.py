@@ -6,40 +6,84 @@ Created on Wed Nov  6 10:53:42 2019
 """
 import os
 import pandas as pd
+from data_loader import load_spark_df, load_pandas_df
 
-
-
-def load(use_cache=True):
-    cache_path = os.path.join(CACHE_PATH, f'reader.msgpack')
-    if use_cache and os.path.exists(cache_path):
-        df = pd.read_msgpack(cache_path)
-        print(f'Loading from {cache_path}')
-    else:
-        df_path = os.path.join(EXCEL_PATH, 'df.csv')
-        df = pd.read_csv(df_path)
-        pd.to_msgpack(cache_path, df)
-        print(f'Dumping to {cache_path}')
-    return df
-
-# Setting Directory path
-base_path = os.getcwd()
-dir_name = 'ml-latest-small'
-CACHE_DIR = base_path + '/cache/'
-DATA_DIR =  base_path + '/data/'
+dir_name = 'ml-20m'
+CACHE_DIR = r'P:\rmahajan14\columbia\fall 2019\Personalization\project_1\personalization_1\cache'
+DATA_DIR = r'P:\rmahajan14\columbia\fall 2019\Personalization\project_1\personalization_1\data'
 
 # Loading the Data Frames
-movies_spark_df = load_spark_df(dir_name=dir_name, 
-                                file_name='movies', 
-                                use_cache=True,
-                                DATA_DIR=DATA_DIR,
-                                CACHE_DIR=CACHE_DIR
-                               )
+df = load_pandas_df(
+    dir_name,
+    'ratings',
+    DATA_DIR=DATA_DIR,
+    CACHE_DIR=CACHE_DIR,
+    use_cache=False)
 
-ratings_spark_df = load_spark_df(dir_name=dir_name, 
-                                 file_name='ratings', 
-                                 use_cache=True,
-                                 DATA_DIR=DATA_DIR,
-                                 CACHE_DIR=CACHE_DIR)
 
-if __name__ == '__main__':
-    df = load()
+def random_sample(large_df, frac):
+  df = large_df.sample(frac=frac, random_state=1)
+  return df
+
+def choose_popular_movies():
+  pass
+
+
+#def counts_per_user():
+movie_counts = df['movieId'].value_counts().reset_index()
+user_counts = df['userId'].value_counts().reset_index()
+
+popular_movies = movie_counts.iloc[:1000]
+popular_users = user_counts.iloc[:10000]
+
+
+df_popular_movies = df.loc[df['movieId'].isin(popular_movies['movieId'])]
+df_popular_users = df.loc[df['userId'].isin(popular_users['userId'])]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
