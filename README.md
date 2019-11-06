@@ -6,13 +6,11 @@ ________________________________________________________________________________
 
 
 ##### Authors: 
-1. [Chandrasekaran Anirudh Bhardwaj](https://github.com/anirudhsekar96) ()
+1. [Chandrasekaran Anirudh Bhardwaj](https://github.com/anirudhsekar96) (cb3441)
 
 2. [Ridhi Mahajan](https://github.com/rmahajan14) (rm3601)
 
 3. [Sheetal Reddy](https://github.com/Sheetalkreddy) (kr2793)
-
-4. [Akshat Mittal](https://github.com/aksmit94) (amxxxx)
 _____________________________________________________________________________________________________________________________
 
 > In this project we perform an in-depth analysis of different algorithms for movie recomendation. 
