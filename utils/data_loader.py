@@ -17,23 +17,6 @@ from pyspark.sql import SQLContext
 #from utils.common import CACHE_DIR, DATA_DIR
 
 
-def sample_data_frame(df,
-                      ratio=0.2,
-                      min_user_threshold=5,
-                      min_item_threshold=5):
-    """
-        Samples and applies a threshold filter on the dataframe
-    """
-    print(f'Length before sampling: {df.count()}')
-    sample_df = df.sample(False, ratio, 42)
-    print(f'Length after sampling: {sample_df.count()}')
-    sample_df = sample_df.filter(sample_df['userId'] >= min_user_threshold)
-    sample_df = sample_df.filter(sample_df['movieId'] >= min_item_threshold)
-    print(f'Length after thresholding: {sample_df.count()}')
-
-    return sample_df
-
-
 def load_pandas_df(dir_name,
                    file_name,
                    use_cache=True,
@@ -84,6 +67,13 @@ def load_spark_df(dir_name,
     return spark_df
 
 
+def pandas_to_spark(pandas_df):
+    sc = SparkContext.getOrCreate()  # else get multiple contexts error
+    sql_sc = SQLContext(sc)
+    spark_df = sql_sc.createDataFrame(pandas_df)
+    return spark_df
+
+
 def spark_to_sparse(spark_df, user_or_item='user'):
     """
         Makes a spark data frame sparse for models such as nearest neighbors
@@ -115,8 +105,17 @@ def spark_to_sparse(spark_df, user_or_item='user'):
 if __name__ == '__main__':
     dir_name = 'ml-latest-small'
     #    dir_name = 'ml-20m'
-    movies_pandas_df = load_pandas_df(dir_name, 'movies', use_cache=True)
-    ratings_pandas_df = load_pandas_df(dir_name, 'ratings', use_cache=True)
+    dir_name = 'ml-20m'
+    CACHE_DIR = r'P:\rmahajan14\columbia\fall 2019\Personalization\project_1\personalization_1\cache'
+    DATA_DIR = r'P:\rmahajan14\columbia\fall 2019\Personalization\project_1\personalization_1\data'
 
-    movies_spark_df = load_spark_df(dir_name, 'movies', use_cache=True)
-    ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
+    #    movies_pandas_df = load_pandas_df(dir_name, 'movies', use_cache=True)
+    ratings_pandas_df = load_pandas_df(
+        dir_name,
+        'ratings',
+        DATA_DIR=DATA_DIR,
+        CACHE_DIR=CACHE_DIR,
+        use_cache=True)
+
+#    movies_spark_df = load_spark_df(dir_name, 'movies', use_cache=True)
+#    ratings_spark_df = load_spark_df(dir_name, 'ratings', use_cache=True)
