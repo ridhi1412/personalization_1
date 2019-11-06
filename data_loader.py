@@ -6,7 +6,10 @@ Created on Sat Oct 19 12:40:57 2019
 """
 
 import pandas as pd
+import numpy as np
 import os
+import sys
+from scipy import sparse
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
@@ -52,6 +55,30 @@ def load_spark_df(dir_name,
         sql_sc = SQLContext(sc)
         spark_df = sql_sc.createDataFrame(pandas_df)
     return spark_df
+
+
+def spark_to_sparse(spark_df, user_or_item='user'):
+    df = spark_df.drop('timestamp')
+    pd_df = df.toPandas()
+
+    row = pd_df['userId'].values
+    column = pd_df['movieId'].values
+    values = pd_df['rating'].values
+
+    num_rows = max(pd_df['userId'])
+    num_columns = max(pd_df['movieId'])
+
+    sparse_mat = np.empty([num_rows + 1, num_columns + 1])
+    sparse_mat[row, column] = values
+    if user_or_item == 'item':
+        sparse_mat = sparse_mat.T
+    elif user_or_item == 'user':
+        pass
+    else:
+        sys.exit()
+
+    sparse_mat = sparse.csr_matrix(sparse_mat)
+    return sparse_mat
 
 
 if __name__ == '__main__':
