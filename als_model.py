@@ -178,6 +178,7 @@ def cross_validation(df,
     rmse = evaluator.evaluate(predictions)
     print(f'RMSE is {rmse}')
     print(cvModel.getEstimatorParamMaps()[0])
+    print('\n')
 
 
 def plot_performance_als(report_df):
